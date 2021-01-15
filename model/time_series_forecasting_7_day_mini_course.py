@@ -52,11 +52,6 @@ import numpy as np
 '''
 
 
-# In[ ]:
-
-
-
-
 
 # ## 01. Promise of Deep Learning
 
@@ -69,12 +64,6 @@ import numpy as np
 3. Multivariate Inputs: 다중 입력
 4. Multi-step Forcasts
 '''
-
-
-# In[ ]:
-
-
-
 
 
 # ## 02: How to Transform Data for Time Series
@@ -140,11 +129,6 @@ y = pd.DataFrame(np.array(outPut), columns = ['y'])
 
 data = pd.concat([X, y], axis=1)
 data.tail(3)
-
-
-# In[ ]:
-
-
 
 
 
@@ -214,10 +198,6 @@ x_input
 
 yhat = model.predict(x_input, verbose=0)
 print(yhat)
-
-
-# In[ ]:
-
 
 
 
@@ -359,15 +339,6 @@ print(y_hat - y_true)
 
 # --------------------------------------------------------------------------------------------
 
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
 
 
 
@@ -461,10 +432,6 @@ print(x_input)
 
 y_hat = model.predict(x_input, verbose=0)
 print(yhat)
-
-
-# In[ ]:
-
 
 
 
@@ -618,22 +585,6 @@ print(y_hat - y_true)
 
 # --------------------------------------------------------------------------------------------
 
-# In[ ]:
-
-
-
-
-
-# In[99]:
-
-
-
-
-
-# In[ ]:
-
-
-
 
 
 # ## 05. LSTM for Time Series Forecasting
@@ -690,15 +641,6 @@ x_input = np.array([50, 60, 70])
 x_input = x_input.reshape((1, 3, 1))
 yhat = model.predict(x_input, verbose=0)
 print(yhat)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
 
 
 
@@ -849,22 +791,9 @@ print(y_hat - y_true)
 
 # --------------------------------------------------------------------------------------------
 
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
 
 
 # ## 06. CNN-LSTM for Time Series Forecasting
-
-# In[ ]:
-
 
 '''
 hybrid CNN-LSTM model 단변량 시계열 예측 
@@ -942,12 +871,6 @@ x_input = x_input.reshape((1, 2, 2, 1))
 
 yhat = model.predict(x_input, verbose=0)
 yhat
-
-
-# In[ ]:
-
-
-
 
 
 # --------------------------------------------------------------------------
@@ -1104,19 +1027,7 @@ print(y_hat - y_true)
 
 # ------------------------------------------------------------------------------------------------
 
-# In[ ]:
 
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[227]:
 
 
 '''
@@ -1126,9 +1037,112 @@ https://machinelearningmastery.com/cnn-long-short-term-memory-networks/
 
 '''
 
+'''
+channel = 1 (black and white)
+filter = 2x2
+input = 10x10
+Maxpooling = 2x2(filter크기로 움직이면서 max값으로 특징 추출, 5x5 이미지로 변경)
+예측 출력을 위해 25개 요소로 벡터화 함(일렬로 펼침)
+'''
+# cnn = Sequential()
+# cnn.add((Conv2D(1, (2, 2), activation='relu', padding='same', input_shape=(10,10,1))))
+# cnn.add(MaxPooling2D(pool_size=(2,2)))
+# cnn.add(Flatten())
 
-# In[ ]:
+
+'''
+cnn은 단일 이미지만 핸들링할 수 있으며, 픽셀 인풋을 internal matrix 또는 벡터로 변환함
+cnn을 이용해 다수의 이미지 인풋에 lstm을 적용해서 역전파로부터 학습되는것을 바람
+TimeDistributed layer는 동일 레이어를 여러번 적용하여 원하는 결과를 얻음(특징을 추출함)
+“This wrapper allows to apply a layer to every temporal slice of an input.”
+“TimeDistributedDense applies a same Dense (fully-connected) operation to every timestep of a 3D tensor.” 
+'''
+# model.add(TimeDistributed(...))
+# model.add(LSTM(...))
+# model.add(Dense(...))
+
+'''
+1. CNN layer을 생성함
+2. TimeDistributed layer로 감쌈
+3. LSTM 적용
+'''
+# cnn = Sequential()
+# cnn.add(Conv2D(...))
+# cnn.add(MaxPooling2D(...))
+# cnn.add(Flatten())
+# # define LSTM model
+# model = Sequential()
+# model.add(TimeDistributed(cnn, ...))
+# model.add(LSTM(..))
+# model.add(Dense(...))
+
+'''
+이를 더 쉽게 읽기 위해, CNN 모델을 TimeDistributed layer로 감쌈
+'''
+# model = Sequential()
+# # define CNN model
+# model.add(TimeDistributed(Conv2D(...))
+# model.add(TimeDistributed(MaxPooling2D(...)))
+# model.add(TimeDistributed(Flatten()))
+# # define LSTM model
+# model.add(LSTM(...))
+# model.add(Dense(...))
 
 
 
+## 07. Encoder-Decoder LSTM Multi-step Forecasting
 
+# multi-step encoder-decoder lstm example
+from numpy import array
+from keras.models import Sequential
+from keras.layers import LSTM
+from keras.layers import Dense
+from keras.layers import RepeatVector
+from keras.layers import TimeDistributed
+
+# define dataset
+X = array([[10, 20, 30], [20, 30, 40], [30, 40, 50], [40, 50, 60]])
+y = array([[40,50], [50,60], [60,70], [70,80]])
+
+print(X.shape, y.shape)
+
+# reshape from [samples, timesteps] into [samples, timesteps, features]
+X = X.reshape((X.shape[0], X.shape[1], 1))
+y = y.reshape((y.shape[0], y.shape[1], 1))
+
+print(X.shape, y.shape)
+
+model = Sequential()
+model.add(LSTM(100, activation = 'relu', input_shape = (3, 1)))
+model.add(RepeatVector(2))
+model.add(LSTM(100, activation = 'relu', return_sequences = True))
+model.add(TimeDistributed(Dense(1)))
+model.compile(optimizer = 'adam', loss = 'mse')
+
+model.fit(X, y, epochs = 100, verbose =0)
+
+x_input = np.array([50, 60, 70])
+x_input = x_input.reshape((1, 3, 1))
+yhat = model.predict(x_input, verbose=0)
+print(yhat)
+
+
+# Encoder-Decoder LSTM
+# https://machinelearningmastery.com/encoder-decoder-long-short-term-memory-networks/
+'''
+Encoder - Decoder LSTM 구조
+케라스 딥러닝 라이브러리로 이용할 수 있음
+encoder - decoder 2 key parts
+
+encoder는 2차원 matrix를 아웃풋으로 생성함. 이는 레이어의 메모리 셀 수로 정해지는 길이임
+decoder는 LSTM 레이어로 3차원으로 문제가 발생함
+이를 해결하기 위해 RepeatVector layer를 사용함. 
+이 레이어는 간단하게 2D input을 반복하여 3D output을 생성함
+TimeDistributed로 감싸면 동일 출력레이어로 재사용가능
+'''
+
+# model = Sequential()
+# model.add(LSTM(..., input_shape=(...)))
+# model.add(RepeatVector(...))
+# model.add(LSTM(..., return_sequences=True))
+# model.add(TimeDistributed(Dense()))
